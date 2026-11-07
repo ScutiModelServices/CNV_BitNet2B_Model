@@ -1,8 +1,8 @@
-# BitNet2BModel
+# CNV_BitNet2B_Model
 
 The one place Microsoft's BitNet b1.58 2B4T is served. Projects send it chat turns over HTTP instead of loading the
 model themselves. It has the same admin page, tokens, rate limits, metrics, settings and update checks as
-`MiniCPM52BModel` and `LayaModel`.
+`CNV_MiniCPM52B_Model` and `DSC_Laya_Model`.
 
 BitNet is run in this process on the CPU with `transformers`. Ollama and stock llama.cpp cannot load Microsoft's GGUF
 (`unsupported tensor "blk.0.ffn_down.weight" size overflows`), and bitnet.cpp's kernels are not used here. Expect the
@@ -21,7 +21,7 @@ and finally `{"type": "done", ...}` holding the same body a call without `stream
 the first piece (a conversation that is too long, a full queue) is still a normal HTTP error; a failure after it is
 sent as `{"type": "error", "status", ...}` and ends the stream. A kept answer (see below) is streamed back in one piece.
 
-**Cache.** The *Answers kept per replica* setting (`BITNET_CACHE_SIZE`, default 256, 0 = off) keeps the last answers
+**Cache.** The *Answers kept per replica* setting (`SERVICE_CACHE_SIZE`, default 256, 0 = off) keeps the last answers
 for identical requests and sends them again without generating (`X-Cache: hit`). Only requests with `temperature` 0
 (the default) are kept, because a higher temperature asks for a different answer each time. Project model files are not watched (see the note on project models), so a replaced checkpoint is only noticed after a restart; new base weights empty the cache. The cache is per
 replica, so with N replicas the hit rate is about 1/N. `stream` does not change the key: a streamed answer fills the
@@ -31,7 +31,7 @@ cache for plain calls and the other way round.
 at most 4096 and the whole conversation must fit the model's 4096-token window (422 otherwise).
 
 **Not supported.** `tools`, `schema` and `thinking` are refused with 422, not ignored: the model has no tool-calling
-or thinking mode and the service has no constrained decoding. Use `MiniCPM52BModel` for those.
+or thinking mode and the service has no constrained decoding. Use `CNV_MiniCPM52B_Model` for those.
 
 **Project models.** Optional `"project": "my-project"` (`^[a-z0-9][a-z0-9_-]{0,47}$`) uses the checkpoint folder
 `<project models folder>/my-project` when it holds a complete Hugging Face checkpoint of the same architecture
@@ -41,7 +41,7 @@ that answered. Replacing the files of an already loaded project needs a replica 
 
 ## Admin page
 
-`/admin/` (password `BITNET_ADMIN_PASSWORD`): per-project tokens with project scope, rate limit and expiry, usage
+`/admin/` (password `SERVICE_ADMIN_PASSWORD`): per-project tokens with project scope, rate limit and expiry, usage
 numbers, CPU threads, the Settings card (update check hours, in-flight cap, answers kept, project models), and the Updates card
 (**Check now** and **Download new weights** for the Hugging Face repository). New weights are downloaded once into
 the shared models volume; the other replicas notice within a few seconds and load them on their next request.
@@ -50,11 +50,11 @@ the shared models volume; the other replicas notice within a few seconds and loa
 ## Run
 
 ```bash
-docker compose up -d --build        # http://<host>:9140
+docker compose up -d --build        # http://<host>:29201
 ```
 
-Without Docker: `run.bat` (uv, listens on `127.0.0.1:9140`). The first start downloads about 1.2 GB. Each replica holds
-the unpacked model in RAM (about 5 GB), so `BITNET_REPLICAS` multiplies memory use. See `deployment.md`.
+Without Docker: `run.bat` (uv, listens on `127.0.0.1:29201`). The first start downloads about 1.2 GB. Each replica holds
+the unpacked model in RAM (about 5 GB), so `SERVICE_REPLICAS` multiplies memory use. See `deployment.md`.
 
 ## Tests
 
@@ -70,3 +70,19 @@ uv run pytest
 - A generation stops after 120 s and returns what it has with `finish_reason: "length"`.
 - `TORCHDYNAMO_DISABLE=1` is set by the service; unpacking the weights otherwise tries to compile C++ and fails on
   machines without a compiler.
+
+## Try it from the admin page
+
+Open `/admin/` and use **Try it** to call the public API with a service token held only in memory. Runs use normal token scopes, limits and caches; the panel shows HTTP status, latency, responses, cancellation and a curl equivalent with a token placeholder. See [the web UI guide](docs/guide-web-ui.md#try-it-send-a-real-request).
+
+Chat sends messages to `POST /v1/chat`, with optional project, temperature, max_tokens and streaming. BitNet rejects tools, schema and thinking with 422; its form does not send those MiniCPM-only fields.
+
+## Documentation
+
+- [Purpose: input, output and what it is for](docs/purpose.md)
+- [Deployment](deployment.md)
+- [Changelog](CHANGELOG.md)
+- [Docker on another machine](docs/guide-docker-deployment-device.md)
+- [Docker on this PC](docs/guide-docker-same-device.md)
+- [Run without Docker](docs/guide-no-docker-same-device.md)
+- [Test it from the command line](docs/guide-cli.md)
