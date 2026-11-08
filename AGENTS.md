@@ -11,6 +11,7 @@ This file is the one instruction file for every coding agent; `CLAUDE.md` only i
 - Run: `run.bat run`, or `uv run python src/app.py` (add `--dotenv` to load `.env`), or `docker compose up -d --build`
 
 ## Rules
+- Load downloaded weights only. No startup, warm-up or request downloads; missing weights return 503 with an admin Updates Download hint. Only the Updates download callback may fetch weights.
 - Follow the `model-service-parity` skill and `AI/ModelServices/_docs/SHARED-FEATURES.md` (what must match in every model service) and `AI/ModelServices/_docs/SERVICE-SPECIFIC.md` (what differs on purpose). A change to a shared feature goes to every service; a new difference goes into `SERVICE-SPECIFIC.md` in the same change.
 - `web/index.html`, `src/tokens.py`, `src/settings.py`, `src/updates.py` and `.dockerignore` are copies shared with the other model services. Change one, copy it to the others, run `python tools/check_sync.py` in each repo.
 - `POST /v1/chat` refuses `tools`, `schema` and `thinking` with 422. This is the source of the engine shape that CNV_LFM3_Model and CNV_SparkX26_Model copy: a change to one of the three usually belongs in all three.

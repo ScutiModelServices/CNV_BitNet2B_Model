@@ -56,3 +56,19 @@ def test_a_failed_download_keeps_the_loaded_model():
     with pytest.raises(OSError):
         asyncio.run(found.update_weights())
     assert engine.ready
+
+
+def test_remote_failure_keeps_downloaded_state_and_download_action():
+    downloads = []
+    def offline(repo):
+        raise OSError("registry unavailable")
+    engine = make_engine(cached_sha=lambda repo: "cached", remote_sha=offline,
+                         download=lambda repo: downloads.append(repo))
+    found = Updates(engine.model, cached_sha=engine.cached_sha, remote_sha=engine.remote_sha,
+                    download=engine.pull, unload=engine.unload)
+    checked = asyncio.run(found.check())
+    assert checked["weights"][0]["cached"] == "cached"
+    assert checked["weights"][0]["latest"] is None
+    assert downloads == []
+    asyncio.run(found.update_weights())
+    assert downloads == ["m"]

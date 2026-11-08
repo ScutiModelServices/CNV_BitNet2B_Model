@@ -7,7 +7,7 @@ Run Microsoft BitNet b1.58 2B4T on the CPU in Docker Desktop on the machine you 
 - Docker Desktop with Compose v2 (Windows: WSL2 backend).
 - About 5 GB of RAM **per replica** (each replica holds the unpacked model), plus the same again for every loaded
   project model. Keep `SERVICE_REPLICAS=1` on a PC. Docker Desktop on Windows caps its engine at about half of your RAM unless you raise it in `.wslconfig`.
-- Network access on the first start to download the weights (about 1.2 GB) from Hugging Face.
+- Network access when an admin presses Download (about 1.2 GB from Hugging Face).
 - CPU only. The Dockerfile installs the CPU build of torch and fails the build if a CUDA or ROCm build is found.
 
 ## Steps
@@ -21,7 +21,7 @@ Run Microsoft BitNet b1.58 2B4T on the CPU in Docker Desktop on the machine you 
    ```bash
    docker compose up -d --build
    ```
-   The first start downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume. `cnv_bitnet2b_model_lb` starts only after the service is healthy
+   The admin Download action downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume. `cnv_bitnet2b_model_lb` starts only after the service is healthy
    (up to 300 s grace). Watch with `docker compose ps` and `docker compose logs -f cnv_bitnet2b_model`.
 3. Check:
    ```bash
@@ -71,10 +71,10 @@ docker compose up -d --build && docker compose restart cnv_bitnet2b_model_lb   #
 | Symptom | Fix |
 |---|---|
 | `address already in use` on 29201 | Another copy (`run.bat`, or the same stack on another compose project) is running. Stop it or change `SERVICE_PORT`. |
-| `/health` shows `ready: false` for minutes | First start: the weights are downloading or loading. Check `docker compose logs -f cnv_bitnet2b_model`. |
+| `/health` shows `ready: false` for minutes | Weights not downloaded yet (press Download on the Updates card), or still loading. Check `docker compose logs -f cnv_bitnet2b_model`. |
 | 401 Invalid token | The caller's token is missing or revoked; make one on `/admin/`. |
 | Container restarts in a loop | Out of RAM. Raise the Docker Desktop memory limit or lower the replica count. |
-| `cnv_bitnet2b_model_lb` never starts | No replica is healthy yet (first download, or out of memory). `docker compose logs cnv_bitnet2b_model`. |
+| `cnv_bitnet2b_model_lb` never starts | No replica is healthy yet (weights not downloaded, or out of memory). `docker compose logs cnv_bitnet2b_model`. |
 | Replicas restart in a loop | Out of RAM. Lower `SERVICE_REPLICAS`. |
 | 422 on `tools`, `schema` or `thinking` | Not supported by this service. |
 | 429 | Over the token's rate limit, or too many calls waiting for the model. |

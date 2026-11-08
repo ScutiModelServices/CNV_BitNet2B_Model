@@ -44,7 +44,7 @@ docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:29201/health
 ```
-The first start downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume; `cnv_bitnet2b_model_lb` waits for a healthy service
+The admin Download action downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume; `cnv_bitnet2b_model_lb` waits for a healthy service
 (up to 300 s grace).
 
 ## 4. Connect callers

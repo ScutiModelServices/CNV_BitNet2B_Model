@@ -49,11 +49,13 @@ the shared models volume; the other replicas notice within a few seconds and loa
 
 ## Run
 
+On first run, open `/admin/` → Updates → Download. Until weights are downloaded, `/health` reports `ready: false` and inference returns 503. Loading never downloads. See [download steps and curl alternative](docs/guide-web-ui.md#downloaded-weights).
+
 ```bash
 docker compose up -d --build        # http://<host>:29201
 ```
 
-Without Docker: `run.bat` (uv, listens on `127.0.0.1:29201`). The first start downloads about 1.2 GB. Each replica holds
+Without Docker: `run.bat` (uv, listens on `127.0.0.1:29201`). The admin Download action downloads about 1.2 GB. Each replica holds
 the unpacked model in RAM (about 5 GB), so `SERVICE_REPLICAS` multiplies memory use. See `deployment.md`.
 
 ## Tests

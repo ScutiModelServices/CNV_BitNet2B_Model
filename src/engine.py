@@ -115,11 +115,11 @@ def load(source: str, dtype: str = "bfloat16") -> Loaded:
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    model = AutoModelForCausalLM.from_pretrained(source, dtype=torch.bfloat16)
+    model = AutoModelForCausalLM.from_pretrained(source, dtype=torch.bfloat16, local_files_only=True)
     if dtype != "bfloat16":
         model = model.to(getattr(torch, dtype))
     model.eval()
-    return Loaded(AutoTokenizer.from_pretrained(source), model)
+    return Loaded(AutoTokenizer.from_pretrained(source, local_files_only=True), model)
 
 
 def _set_threads(count: int) -> None:
@@ -216,7 +216,10 @@ class BitNetEngine:
     def _base_model(self) -> Loaded:
         with self._load_lock:
             if self._base is None:
-                self._base = self._loader(self.model)
+                try:
+                    self._base = self._loader(self.model)
+                except OSError as error:
+                    raise EngineError("Model weights unavailable. Ask an admin to press Download on the Updates card.", 503) from error
             return self._base
 
     def _pick(self, project: str | None) -> tuple[Loaded, str, bool]:
