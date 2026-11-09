@@ -4,9 +4,12 @@ The one place Microsoft's BitNet b1.58 2B4T is served. Projects send it chat tur
 model themselves. It has the same admin page, tokens, rate limits, metrics, settings and update checks as
 `CNV_MiniCPM52B_Model` and `DSC_Laya_Model`.
 
-BitNet is run in this process on the CPU with `transformers`. Ollama and stock llama.cpp cannot load Microsoft's GGUF
-(`unsupported tensor "blk.0.ffn_down.weight" size overflows`), and bitnet.cpp's kernels are not used here. Expect the
-small memory footprint, not the speed the model card shows for bitnet.cpp.
+BitNet runs on the CPU with one of two engines (setting **Engine**, `SERVICE_ENGINE`, restart):
+
+- `transformers` (default): in this process. It has no BitNet kernels, so expect the small memory footprint, not the speed the model card shows. Works everywhere, supports project models.
+- `bitnet.cpp`: a `llama-server` built from Microsoft's bitnet.cpp into the **Docker image only** (`/usr/local/bin/llama-server`, `SERVICE_CPP_SERVER` overrides the name). It uses the i2_s CPU kernels and is much faster. It reads the GGUF weights (`microsoft/BitNet-b1.58-2B-4T-gguf`, about 1.2 GB): after switching, press Download on the Updates card. Project models are not supported with it (a call with `project` falls back to the base model). `dtype` has no effect. CPU threads apply by restarting the server (the next call pays the load). Roughly 5 times the tokens per second of `transformers` on one test machine (about 17 against 3, a few short prompts; not a benchmark).
+
+Ollama and stock llama.cpp cannot load Microsoft's GGUF (`unsupported tensor "blk.0.ffn_down.weight" size overflows`); only the bitnet.cpp fork can.
 
 ## API
 

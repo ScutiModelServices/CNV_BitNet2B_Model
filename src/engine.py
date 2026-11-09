@@ -107,6 +107,8 @@ class Loaded:
 
 
 DTYPES = ("bfloat16", "float32")
+ENGINES = ("transformers", "bitnet.cpp")
+GGUF_MODEL = "microsoft/BitNet-b1.58-2B-4T-gguf"  # the weights bitnet.cpp reads; project models are not supported with it
 
 
 def load(source: str, dtype: str = "bfloat16") -> Loaded:
@@ -162,11 +164,15 @@ class BitNetEngine:
 
     def __init__(self, model: str = DEFAULT_MODEL, *, projects_dir: str = "", max_projects: int = 2,
                  timeout: float = 120.0, marker: Path | None = None, loader: Callable[[str], Loaded] | None = None,
-                 dtype: str = "bfloat16",
-                 set_threads: Callable[[int], None] = _set_threads,
+                 dtype: str = "bfloat16", engine: str = "transformers",
+                 set_threads: Callable[[int], None] | None = None,
                  remote_sha: Callable[[str], str] = _remote_sha, cached_sha: Callable[[str], str | None] = _cached_sha,
                  download: Callable[[str], None] = _download) -> None:
+        if engine not in ENGINES:
+            raise ValueError(f"engine must be one of {', '.join(ENGINES)}, not {engine!r}")
+        self.engine = engine
         self.model = model
+        self.repo = GGUF_MODEL if engine == "bitnet.cpp" else model  # the Hub repository the Updates card checks and downloads
         self.projects_dir = projects_dir
         self.max_projects = max_projects
         self._threads: int | None = None
@@ -176,8 +182,9 @@ class BitNetEngine:
         if dtype not in DTYPES:
             raise ValueError(f"dtype must be one of {', '.join(DTYPES)}, not {dtype!r}")
         self.dtype = dtype
-        self._loader = loader or (lambda source: load(source, self.dtype))
-        self._set_threads = set_threads
+        self._loader = loader or (self._load_cpp if engine == "bitnet.cpp" else (lambda source: load(source, self.dtype)))
+        # bitnet.cpp takes its thread count when the server starts, so a change drops the server (see `num_thread`)
+        self._set_threads = set_threads or (_set_threads if engine == "transformers" else (lambda count: None))
         self._remote_sha_of, self._cached_sha_of, self._download_of = remote_sha, cached_sha, download
         self._base: Loaded | None = None
         self._projects: OrderedDict[str, Loaded] = OrderedDict()
@@ -194,6 +201,13 @@ class BitNetEngine:
         if count != self._threads:
             self._set_threads(count)
             self._threads = count
+            if self.engine == "bitnet.cpp":
+                self._forget()
+
+    def _load_cpp(self, source: str) -> Loaded:
+        from cpp import load as load_cpp
+
+        return load_cpp(source, self._threads)
 
     @property
     def ready(self) -> bool:
@@ -203,10 +217,10 @@ class BitNetEngine:
         self._base, self._projects = None, OrderedDict()
 
     def has_project(self, name: str) -> bool:
-        return bool(self.projects_dir) and (Path(self.projects_dir) / name / "config.json").is_file()
+        return self.engine == "transformers" and bool(self.projects_dir) and (Path(self.projects_dir) / name / "config.json").is_file()
 
     def projects(self) -> list[str]:
-        root = Path(self.projects_dir) if self.projects_dir else None
+        root = Path(self.projects_dir) if self.projects_dir and self.engine == "transformers" else None
         if root is None or not root.is_dir():
             return []
         return sorted(entry.name for entry in root.iterdir() if (entry / "config.json").is_file())
@@ -219,7 +233,7 @@ class BitNetEngine:
         with self._load_lock:
             if self._base is None:
                 try:
-                    self._base = self._loader(self.model)
+                    self._base = self._loader(self.repo)
                 except OSError as error:
                     raise EngineError("Model weights unavailable. Ask an admin to press Download on the Updates card.", 503) from error
             return self._base
@@ -227,7 +241,7 @@ class BitNetEngine:
     def _pick(self, project: str | None) -> tuple[Loaded, str, bool]:
         """The model for a call, its name, and whether a missing or broken project fell back to the base model."""
         if project is None or not self.has_project(project):
-            return self._base_model(), self.model, project is not None
+            return self._base_model(), self.repo, project is not None
         with self._load_lock:
             if project in self._projects:
                 self._projects.move_to_end(project)
@@ -236,7 +250,7 @@ class BitNetEngine:
             loaded = self._loader(str(Path(self.projects_dir) / project))
         except Exception:
             _log.exception("Project model %s could not be loaded; using the base model", project)
-            return self._base_model(), self.model, True
+            return self._base_model(), self.repo, True
         with self._load_lock:
             self._projects[project] = loaded
             while len(self._projects) > max(1, self.max_projects):
@@ -274,13 +288,13 @@ class BitNetEngine:
         return await self.cached_sha() is not None
 
     async def cached_sha(self) -> str | None:
-        return await asyncio.to_thread(self._cached_sha_of, self.model)
+        return await asyncio.to_thread(self._cached_sha_of, self.repo)
 
     async def remote_sha(self) -> str:
-        return await asyncio.to_thread(self._remote_sha_of, self.model)
+        return await asyncio.to_thread(self._remote_sha_of, self.repo)
 
     async def pull(self) -> None:
-        await asyncio.to_thread(self._download_of, self.model)
+        await asyncio.to_thread(self._download_of, self.repo)
 
     async def unload(self) -> None:
         """Forget the loaded models here and tell the other replicas to do the same; the next call loads the new weights."""

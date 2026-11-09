@@ -18,5 +18,7 @@ SETTINGS = [
             help="A Hugging Face repository. After a restart, download it from the Updates card"),
     Setting("dtype", "Number format", "text", "bfloat16", "SERVICE_DTYPE", restart=True, blank=False,
             help="bfloat16 or float32. float32 is faster on CPUs without native bfloat16 maths but uses about 1.6x the memory"),
+    Setting("engine", "Engine", "text", "transformers", "SERVICE_ENGINE", restart=True, blank=False,
+            help="transformers (works everywhere, slow) or bitnet.cpp (Docker image only, much faster; downloads the GGUF weights from the Updates card; no project models)"),
     Setting("warm", "Load the model at start", "bool", True, "SERVICE_WARM", restart=True),
 ]

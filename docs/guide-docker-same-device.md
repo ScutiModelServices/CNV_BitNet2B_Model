@@ -54,7 +54,7 @@ On the **Settings** card of `/admin/` (saved in `settings.json` beside the token
 value beats the environment variable named in brackets): update check hours (`SERVICE_UPDATE_CHECK_HOURS`, 6),
 in-flight cap (`SERVICE_MAX_INFLIGHT`, 0 = 4), answers kept per replica (`SERVICE_CACHE_SIZE`, 256, 0 = off), project models loaded per replica (`SERVICE_MAX_PROJECT_MODELS`, 2),
 project models folder (`SERVICE_PROJECT_MODELS_DIR`, empty = off; in Docker use `/models/projects`), base model
-(`SERVICE_MODEL`, restart), number format (`SERVICE_DTYPE`, restart: `bfloat16` or `float32`; try `float32` if answers take many seconds on a CPU without native bfloat16 maths, it needs about 1.6x the RAM) and load at start (`SERVICE_WARM`, restart). Compose does not pass these; add the variable
+(`SERVICE_MODEL`, restart), engine (`SERVICE_ENGINE`, restart: `transformers` or `bitnet.cpp`, the fast one; after switching press Download on the Updates card for the GGUF weights), number format (`SERVICE_DTYPE`, restart: `bfloat16` or `float32`; try `float32` if answers take many seconds on a CPU without native bfloat16 maths, it needs about 1.6x the RAM) and load at start (`SERVICE_WARM`, restart). Compose does not pass these; add the variable
 under `environment:` of `cnv_bitnet2b_model` to use one as a starting value.
 
 ## Daily use
@@ -78,7 +78,7 @@ docker compose --env-file .env.compose up -d --build && docker compose restart c
 | Replicas restart in a loop | Out of RAM. Lower `SERVICE_REPLICAS`. |
 | 422 on `tools`, `schema` or `thinking` | Not supported by this service. |
 | 429 | Over the token's rate limit, or too many calls waiting for the model. |
-| Slow answers | `transformers` has no BitNet kernels; this is the expected CPU speed. Raise CPU threads on `/admin/`. |
+| Slow answers | `transformers` has no BitNet kernels; this is the expected CPU speed. Set the engine to `bitnet.cpp` and press Download on Updates, or raise CPU threads on `/admin/`. |
 | nginx 502 after scaling | `cnv_bitnet2b_model_lb` not restarted after the replica count changed. |
 
 The load balancer also joins external `citadel_core` as `cnv_bitnet2b_model_lb`. Start the Citadel stack first so that network exists; tool services on it use `http://cnv_bitnet2b_model_lb:29201`. Docker project and API image are `cnv_bitnet2b_model` and `cnv_bitnet2b_model:latest`; persistent volumes have explicit `cnv_bitnet2b_model_*` names. Volume migration and rollback instructions are in [CHANGELOG.md](../CHANGELOG.md).

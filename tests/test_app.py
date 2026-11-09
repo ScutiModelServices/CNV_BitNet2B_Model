@@ -51,7 +51,7 @@ def test_a_long_conversation_is_422_and_a_crash_is_500():
         async def close(self):
             pass
 
-        model, num_thread, ready = "m", None, False
+        model, repo, num_thread, ready = "m", "m", None, False
 
     for error, status in ((EngineError("too long", 400), 422), (RuntimeError("boom"), 500)):
         assert client(Broken()).post("/v1/chat", json=BODY).status_code == status

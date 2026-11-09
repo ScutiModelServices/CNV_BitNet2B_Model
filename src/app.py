@@ -88,7 +88,8 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
     `max_inflight` and `cache_size` and keeps them live; without it they stay fixed."""
     tokens = tokens or TokenStore(os.environ.get("SERVICE_TOKENS_FILE", "tokens.json"))
     client = client or BitNetEngine(config.get("model") if config else os.environ.get("SERVICE_MODEL", DEFAULT_MODEL),
-                                    dtype=config.get("dtype") if config else "bfloat16", marker=default_marker())
+                                    dtype=config.get("dtype") if config else "bfloat16",
+                                    engine=config.get("engine") if config else os.environ.get("SERVICE_ENGINE", "transformers"), marker=default_marker())
     inflight = 0
     cache = AnswerCache()
 
@@ -103,7 +104,7 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
             max_inflight if max_inflight is not None else int(os.environ.get("SERVICE_MAX_INFLIGHT") or 0))
         return value or 4
 
-    updates = updates or Updates(client.model, cached_sha=lambda: client.cached_sha(), remote_sha=lambda: client.remote_sha(),
+    updates = updates or Updates(client.repo, cached_sha=lambda: client.cached_sha(), remote_sha=lambda: client.remote_sha(),
                                  download=lambda: client.pull(), unload=lambda: client.unload(),
                                  description="Looks for newer model weights on the Hugging Face Hub without downloading.",
                                  reload_note="Weights downloaded. Every replica drops the old copy within a few seconds and loads the new weights on its next request.")
@@ -205,7 +206,7 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
 
     @app.get("/health")
     async def health() -> dict[str, Any]:
-        return {"status": "ok", "model": client.model, "ready": client.ready,
+        return {"status": "ok", "model": client.repo, "ready": client.ready,
                 "num_thread": client.num_thread, "project_models": client.projects()}
 
     def build(reply: dict[str, Any], started: float) -> dict[str, Any]:
@@ -432,7 +433,7 @@ def main() -> None:
     store = TokenStore(os.environ.get("SERVICE_TOKENS_FILE", "tokens.json"))
     config = settings.Config(store.settings_path, SETTINGS)
     client = BitNetEngine(config.get("model"), projects_dir=config.get("project_models_dir"),
-                          max_projects=config.get("max_project_models"), dtype=config.get("dtype"),
+                          max_projects=config.get("max_project_models"), dtype=config.get("dtype"), engine=config.get("engine"),
                           marker=default_marker())
     saved = settings.load(store.settings_path)
     threads = saved.get("num_thread") or os.environ.get("SERVICE_NUM_THREAD", "").strip()
