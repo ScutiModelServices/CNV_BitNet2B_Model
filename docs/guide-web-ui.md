@@ -26,7 +26,7 @@ the password and any freshly created token. If browser storage is blocked, sign 
 
 The header shows the service address and a health badge with an icon and text: **Healthy**, **Starting**, or
 **Unreachable**. Health is checked without authentication every 10 seconds while signed in. **Starting** means the model
-is not loaded yet (the first start downloads it). Tiles show model readiness, replicas, parallel generations, CPU threads, and active tokens.
+is not loaded yet (an admin must press Download on the Updates card first). Tiles show model readiness, replicas, parallel generations, CPU threads, and active tokens.
 Use **Theme** to cycle between system, light, and dark appearance; this preference is saved in the browser.
 
 ## Tokens
@@ -143,3 +143,15 @@ The browser caps uploads at **10 MiB**, displayed text at **256 KiB**, and binar
 ### This service's request
 
 Chat sends messages to `POST /v1/chat`, with optional project, temperature, max_tokens and streaming. BitNet rejects tools, schema and thinking with 422; its form does not send those MiniCPM-only fields.
+
+## Downloaded weights
+
+On first run, open `/admin/`, sign in, then press **Download** on **Updates**. Loading never downloads. Before this step the admin page and `/health` answer, `ready` is false, and inference returns 503 with an admin Download hint.
+
+The card shows the downloaded and online versions and marks a newer version when they differ. Checks run at startup and every `update_check_hours` (0 disables automatic checks); **Check now** only checks. Only **Download** installs weights, then every replica drops its loaded copy and reloads on its next request.
+
+Alternative using the admin password (replace the address and placeholder):
+
+```bash
+curl -X POST "http://localhost:29201/admin/updates/weights" -H "X-Internal-Token: <ADMIN_PASSWORD>"
+```

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Admin page: the CPU threads card and tile are hidden when `CONFIG.tags` has `host-threads`, and the Project models card is shown only with `project-models`.
+
+- Admin page: `CONFIG.tags` (same tags as `docs/purpose.md`) switch tag-driven notes: `gpu` shows a CPU-threads note, `license-restricted` shows a licence note on the Updates card.
+
+- Fix: after Download, a CPU threads change or a sync from another replica drops the loaded model, the service now reloads it in the background (when "Load the model at start" is on) instead of showing "Starting" on `/admin/` until the first request.
+- Breaking: startup, warm-up and requests load downloaded weights only. First run requires `/admin/` → Updates → Download; missing weights keep health/admin available and inference returns 503. Checks never download; explicit Download replaces weights and tells every replica to reload.
+- Updates shows downloaded and online versions, newer-version and not-downloaded states; Download remains available when online comparison fails.
+
 - `SERVICE_MODELS_DIR` sets where a local (no Docker) run keeps downloaded model weights: `settings.apply_models_dir()` maps it to `HF_HOME` and `OLLAMA_MODELS` at start.
 - Docs: `docs/guide-cli.md`, a PowerShell-only way to test the service.
 

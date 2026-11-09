@@ -126,9 +126,16 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
             client.projects_dir = config.get("project_models_dir")
             client.max_projects = config.get("max_project_models")
             client.sync()
+            # A dropped model (download, threads change, sync) leaves /health "Starting" until a request loads it: reload once per drop.
+            if config.get("warm") and not client.ready and client.generation != warmed:
+                await warm_up()
             await asyncio.sleep(1)
 
+    warmed = 0  # generation of the last warm-up attempt
+
     async def warm_up() -> None:
+        nonlocal warmed
+        warmed = client.generation
         try:
             await client.warm()
         except Exception:
@@ -139,7 +146,7 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
         background: list[asyncio.Task] = []
         try:
             if config.get("warm") if config else warm:
-                # In the background: the first start downloads the weights, and /health must answer meanwhile.
+                # In the background: warm-up loads downloaded weights only, and /health must answer meanwhile.
                 background.append(asyncio.create_task(warm_up()))
             if config or check_hours > 0:
                 background.append(asyncio.create_task(check_forever()))
@@ -237,7 +244,7 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
                 else:
                     stats = value
         except EngineError as error:
-            yield line({"type": "error", "status": 422 if error.status == 400 else 500, "message": str(error)})
+            yield line({"type": "error", "status": 422 if error.status == 400 else (error.status or 500), "message": str(error)})
             return
         except Exception:
             _log.exception("BitNet chat failed")
@@ -276,7 +283,7 @@ def create_app(client: BitNetEngine | None = None, admin_password: str | None = 
                 return ndjson(live_lines(events, first, started, key, size), "miss")
             reply = await client.chat(messages, project=body.project, temperature=body.temperature, max_tokens=body.max_tokens)
         except EngineError as error:
-            raise HTTPException(422 if error.status == 400 else 500, str(error)) from None
+            raise HTTPException(422 if error.status == 400 else (error.status or 500), str(error)) from None
         except Exception:
             _log.exception("BitNet chat failed")
             raise HTTPException(500, "BitNet could not answer") from None

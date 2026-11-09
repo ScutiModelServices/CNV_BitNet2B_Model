@@ -1,7 +1,7 @@
 # CNV_BitNet2B_Model: Docker on a deployment machine
 
 Run Microsoft BitNet b1.58 2B4T on the CPU on a separate always-on machine (default `lex@scutiserver1.local`, folder
-`/media/ZimaOS-HD/Apps/CNV_BitNet2B_Model`). Callers reach it over the published port.
+`/media/ZimaOS-HD/Apps/ModelServices/CNV_BitNet2B_Model`). Callers reach it over the published port.
 
 ## Requirements on the machine
 
@@ -27,9 +27,9 @@ Keep your own target in the git-ignored `tools\deploy.local.ini` (copy `tools\de
 ## 2. First-time setup on the machine
 
 ```bash
-mkdir -p /media/ZimaOS-HD/Apps
-git clone -b live <your-repo-url> /media/ZimaOS-HD/Apps/CNV_BitNet2B_Model
-cd /media/ZimaOS-HD/Apps/CNV_BitNet2B_Model
+mkdir -p /media/ZimaOS-HD/Apps/ModelServices
+git clone -b live <your-repo-url> /media/ZimaOS-HD/Apps/ModelServices/CNV_BitNet2B_Model
+cd /media/ZimaOS-HD/Apps/ModelServices/CNV_BitNet2B_Model
 ```
 Create `.env` (deploy option 2 copies yours, or `cp .env.example .env` and edit):
 - `SERVICE_ADMIN_PASSWORD`: a real password.
@@ -44,7 +44,7 @@ docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:29201/health
 ```
-The first start downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume; `cnv_bitnet2b_model_lb` waits for a healthy service
+The admin Download action downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume; `cnv_bitnet2b_model_lb` waits for a healthy service
 (up to 300 s grace).
 
 ## 4. Connect callers
@@ -71,7 +71,7 @@ The restart is needed because nginx resolves replica addresses once at start.
 ## Updating
 
 ```bash
-cd /media/ZimaOS-HD/Apps/CNV_BitNet2B_Model
+cd /media/ZimaOS-HD/Apps/ModelServices/CNV_BitNet2B_Model
 git pull
 docker compose up -d --build
 docker compose restart cnv_bitnet2b_model_lb
