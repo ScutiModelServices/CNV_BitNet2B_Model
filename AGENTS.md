@@ -16,6 +16,7 @@ This file is the one instruction file for every coding agent; `CLAUDE.md` only i
 - `web/index.html`, `src/tokens.py`, `src/settings.py`, `src/updates.py` and `.dockerignore` are copies shared with the other model services. Change one, copy it to the others, run `python tools/check_sync.py` in each repo.
 - `POST /v1/chat` refuses `tools`, `schema` and `thinking` with 422. This is the source of the engine shape that CNV_LFM3_Model and CNV_SparkX26_Model copy: a change to one of the three usually belongs in all three.
 - Settings `model`, `dtype`, `max_project_models` and `project_models_dir`; `src/cache.py` is a copy shared with Laya, MiniCPM, LFM3 and SparkX26.
+- Variants: `src/variants.py` lists the `dtype` formats (`bfloat16`, `float32`) of the one set of weights with the memory figures from the README (not measured), `src/hardware.py` reads RAM and the GPU (the same file as in STT_Whisper_Model). `/admin/variant` saves `dtype`, a restart setting; the base model and project models are never changed.
 - Behaviour changes update `README.md`, `deployment.md`, `docs/guide-web-ui.md`, `.env.example` and `CHANGELOG.md` in the same commit.
 - Never read or print `.env`, `.env.local`, `.env.compose`, `tokens.json` or `settings.json`.
 - Commit with the noreply author email `214214011+scutiii2@users.noreply.github.com` (another address is rejected on push). Push `main`, then run `python tools/publish_live.py`. Build Docker only when the Dockerfile or the dependencies changed.

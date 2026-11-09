@@ -55,7 +55,7 @@ On first run, open `/admin/` → Updates → Download. Until weights are downloa
 docker compose --env-file .env.compose up -d --build        # http://<host>:29201
 ```
 
-Without Docker: `run.bat` (uv, listens on `127.0.0.1:29201`). The admin Download action downloads about 1.2 GB. Each replica holds
+Without Docker: `run.bat` (uv, listens on `127.0.0.1:29201`). The admin Download action downloads about 1.2 GB. The admin **Model variant** card chooses the number format this machine can hold. Each replica holds
 the unpacked model in RAM (about 5 GB), so `SERVICE_REPLICAS` multiplies memory use. See `deployment.md`.
 
 ## Tests

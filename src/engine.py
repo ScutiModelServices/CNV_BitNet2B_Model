@@ -269,6 +269,10 @@ class BitNetEngine:
 
     # Updates: the Hub revision of the base weights, shared by all replicas through one models volume.
 
+    async def downloaded(self) -> bool:
+        """True when the base model's weights are on disk."""
+        return await self.cached_sha() is not None
+
     async def cached_sha(self) -> str | None:
         return await asyncio.to_thread(self._cached_sha_of, self.model)
 

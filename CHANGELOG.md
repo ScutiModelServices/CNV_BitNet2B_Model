@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Admin page: new **Model variant** card. It lists the two number formats (`bfloat16`, `float32`) of the one set of weights, with the memory each takes (the figures already in this README, about 5 GB and 8 GB; not measured), the download size, whether the weights are on disk, and whether this machine can run it. Endpoints `GET /admin/variants` and `PUT /admin/variant` (409 when it does not fit); a choice saves `dtype`, a restart setting. New `src/hardware.py` and `src/variants.py`.
 - Env files: `run.bat` (`--dotenv`) now loads `.env.local`, then `.env`; the first file to set a name wins and a real environment variable still beats both, so a host run can keep `SERVICE_OLLAMA_URL=http://127.0.0.1:11434` in `.env.local` while Docker uses `http://host.docker.internal:11434`. `.env.compose` is for Docker Desktop on this device (`docker compose --env-file .env.compose up -d --build`). `.env` stays the file Deploy option 2 pushes to the deployment device, where a plain `docker compose up -d --build` reads it. `.env.local` and `.env.compose` are git-ignored and Docker-ignored (`.env.*`). New shared `settings.load_env_files`.
 - Admin page and shared styles: polish layer in `web/index.html` (focus ring, hover and pressed states, layered shadow on the sign-in card and dialogs, tabular numbers, one entrance motion per page, themed scrollbars, `prefers-reduced-motion`). No behaviour change.
 
