@@ -149,6 +149,13 @@ def test_settings_can_be_saved_and_reset(page):
     sync_api.expect(page.locator("#setting-max_inflight")).to_have_value("0")
 
 
+def test_project_models_card_follows_the_tag(page):
+    page.fill("#admin", PASSWORD)
+    page.click("#signin-button")
+    sync_api.expect(page.locator("#project-models-card")).to_be_visible()  # CONFIG.tags has project-models
+    sync_api.expect(page.locator("#threads-card")).to_be_visible()
+
+
 def _open_playground(page):
     """Use separate admin and public credentials."""
     page.fill("#admin", PASSWORD)
