@@ -19,7 +19,7 @@ Run Microsoft BitNet b1.58 2B4T on the CPU in Docker Desktop on the machine you 
    Set `SERVICE_ADMIN_PASSWORD` (empty = no auth and no admin page, fine for a local test). Leave `SERVICE_PORT=29201`. Leave `SERVICE_REPLICAS=1`.
 2. Start:
    ```bash
-   docker compose up -d --build
+   docker compose --env-file .env.compose up -d --build
    ```
    The admin Download action downloads about 1.2 GB of weights into the `cnv_bitnet2b_model_models` volume. `cnv_bitnet2b_model_lb` starts only after the service is healthy
    (up to 300 s grace). Watch with `docker compose ps` and `docker compose logs -f cnv_bitnet2b_model`.
@@ -40,7 +40,7 @@ Run Microsoft BitNet b1.58 2B4T on the CPU in Docker Desktop on the machine you 
 
 ## Settings
 
-In `.env` next to `docker-compose.yml`:
+In `.env.compose` next to `docker-compose.yml` (start with `docker compose --env-file .env.compose up -d --build`):
 
 | Variable | Default | Effect |
 |---|---|---|
@@ -63,7 +63,7 @@ under `environment:` of `cnv_bitnet2b_model` to use one as a starting value.
 docker compose ps          # state
 docker compose logs -f cnv_bitnet2b_model
 docker compose down        # stop (the weights volume is kept)
-docker compose up -d --build && docker compose restart cnv_bitnet2b_model_lb   # after a code change
+docker compose --env-file .env.compose up -d --build && docker compose restart cnv_bitnet2b_model_lb   # after a code change
 ```
 
 ## Problems
