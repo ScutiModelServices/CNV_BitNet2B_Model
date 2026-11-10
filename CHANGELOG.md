@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Playground: no token to paste
+
+The Try it panel signs in with a temporary public token made from the admin session (named `playground (temporary)`, valid 1 day, revoked on sign-out or when the tab closes), so the service token field is hidden and choices such as voices load by themselves. The token shows in the tokens list while it lives.
+
+
 - New **Engine** setting (`SERVICE_ENGINE`, restart): `transformers` (default, as before) or `bitnet.cpp`, a `llama-server` built from Microsoft's bitnet.cpp into the Docker image (new `cpp` build stage in the `Dockerfile`, pinned commit) and run as a child process by new `src/cpp.py`. It reads the GGUF weights (`microsoft/BitNet-b1.58-2B-4T-gguf`), downloaded from the Updates card; no project models with it; CPU threads restart the server. Roughly 5 times the tokens per second of `transformers` in a quick test (not a benchmark). The Dockerfile pins BitNet to the June 2025 commit `404980e`: the July 2026 `main` gave wrong, never-ending answers with Microsoft's GGUF. The prompt is built in `src/cpp.py` (the GGUF has no chat template) and sent to `/completion`.
 - Admin page: new **Model variant** card. It lists the two number formats (`bfloat16`, `float32`) of the one set of weights, with the memory each takes (the figures already in this README, about 5 GB and 8 GB; not measured), the download size, whether the weights are on disk, and whether this machine can run it. Endpoints `GET /admin/variants` and `PUT /admin/variant` (409 when it does not fit); a choice saves `dtype`, a restart setting. New `src/hardware.py` and `src/variants.py`.
 - Env files: `run.bat` (`--dotenv`) now loads `.env.local`, then `.env`; the first file to set a name wins and a real environment variable still beats both, so a host run can keep `SERVICE_OLLAMA_URL=http://127.0.0.1:11434` in `.env.local` while Docker uses `http://host.docker.internal:11434`. `.env.compose` is for Docker Desktop on this device (`docker compose --env-file .env.compose up -d --build`). `.env` stays the file Deploy option 2 pushes to the deployment device, where a plain `docker compose up -d --build` reads it. `.env.local` and `.env.compose` are git-ignored and Docker-ignored (`.env.*`). New shared `settings.load_env_files`.
